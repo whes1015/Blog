@@ -14,7 +14,10 @@ export default function PostCard({ post }: PostCardProps) {
     `}
     >
       <Link
-        href={`/posts/${post.slug}`}
+        href={{
+          pathname: '/posts',
+          query: { slug: post.slug },
+        }}
         className="block space-y-3"
       >
         <h2 className={`

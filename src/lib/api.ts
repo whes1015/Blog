@@ -1,53 +1,15 @@
-import { Post } from '@/types/post';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
-const BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://raw.githubusercontent.com/whes1015/whes1015/main/public'
-  : 'http://localhost:3000';
-
-export async function getAllPosts(): Promise<Post[]> {
+export function getAllPosts() {
   try {
-    const url = new URL('/blogs/index.json', BASE_URL);
-    const response = await fetch(url, {
-      ...(process.env.NODE_ENV === 'production'
-        ? { next: { revalidate: 3600 } }
-        : {}),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch posts index: ${response.statusText}`);
-    }
-
-    const posts = await response.json() as Post[];
-    return posts.sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
+    const postsDirectory = join(process.cwd(), 'public', 'blogs');
+    const indexPath = join(postsDirectory, 'index.json');
+    const fileContents = readFileSync(indexPath, 'utf8');
+    return JSON.parse(fileContents);
   }
   catch (error) {
-    console.error('Error fetching posts:', error);
+    console.error('Error reading posts:', error);
     return [];
-  }
-}
-
-export async function getPostContent(slug: string): Promise<string | null> {
-  try {
-    const url = new URL(`/blogs/${slug}.md`, BASE_URL);
-    const response = await fetch(url, {
-      ...(process.env.NODE_ENV === 'production'
-        ? { next: { revalidate: 3600 } }
-        : {}),
-    });
-
-    if (!response.ok) {
-      console.error(`Failed to fetch post content: ${response.statusText}`);
-      return null;
-    }
-
-    return await response.text();
-  }
-  catch (error) {
-    if (error instanceof Error) {
-      console.error('Error fetching post content:', error.message);
-    }
-    return null;
   }
 }
