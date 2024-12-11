@@ -1,3 +1,4 @@
+// src/app/posts/[slug]/client.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,14 +8,8 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-interface Post {
-  slug: string;
-  title: string;
-  date: string;
-  excerpt: string;
-  content?: string;
-}
+import { getPostBySlug } from '@/lib/api';
+import { Post } from '@/types/post';
 
 function LoadingState() {
   return (
@@ -78,24 +73,14 @@ export default function PostPageClient() {
     // 獲取文章數據
     async function fetchPost() {
       try {
-        // 獲取文章列表
-        const indexResponse = await fetch('/blogs/index.json');
-        const posts = await indexResponse.json() as Post[];
-        const currentPost = posts.find((p) => p.slug === slug);
+        const postData = await getPostBySlug(slug);
 
-        if (!currentPost) {
+        if (!postData) {
           router.push('/');
           return;
         }
 
-        // 獲取文章內容
-        const contentResponse = await fetch(`/blogs/${slug}.md`);
-        const content = await contentResponse.text();
-
-        setPost({
-          ...currentPost,
-          content,
-        });
+        setPost(postData);
       }
       catch (error) {
         console.error('Error fetching post:', error);
