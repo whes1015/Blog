@@ -64,16 +64,14 @@ export default function PostPageClient() {
   useEffect(() => {
     setMounted(true);
 
-    // 如果沒有 slug，重定向到首頁
     if (!slug) {
       router.push('/');
       return;
     }
 
-    // 獲取文章數據
     async function fetchPost() {
       try {
-        const postData = await getPostBySlug(slug);
+        const postData = await getPostBySlug(slug ?? '');
 
         if (!postData) {
           router.push('/');
