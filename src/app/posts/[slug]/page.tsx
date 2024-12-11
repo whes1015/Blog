@@ -1,22 +1,14 @@
-import MarkdownIt from 'markdown-it';
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { getAllPosts, getPostContent } from '@/lib/api';
 
-import type { Metadata } from 'next';
+import { PostContent } from './client';
 
-interface PageProps {
-  params: Promise<{ slug: string }>;
-}
-
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true,
-});
-
-function isString(value: unknown): value is string {
-  return typeof value === 'string';
+interface PostPageProps {
+  params: Promise<{
+    slug: string;
+  }>;
 }
 
 export async function generateStaticParams() {
@@ -32,69 +24,56 @@ export async function generateStaticParams() {
   }
 }
 
-export async function generateMetadata(props: PageProps): Promise<Metadata> {
-  try {
-    const params = await props.params;
-    const posts = await getAllPosts();
-    const post = posts.find((p) => p.slug === params.slug);
+export async function generateMetadata(
+  props: PostPageProps,
+): Promise<Metadata> {
+  const { params } = props;
+  const { slug } = await params;
 
-    if (!post) {
-      return {
-        title: 'Post Not Found',
-        description: 'The requested post could not be found.',
-      };
-    }
+  const posts = await getAllPosts();
+  const post = posts.find((p) => p.slug === slug);
 
+  if (!post) {
     return {
-      title: post.title,
-      description: post.excerpt,
+      title: 'Post Not Found',
+      description: 'The requested post could not be found.',
     };
   }
-  catch (error) {
-    console.error('Error generating metadata:', error);
-    return {
-      title: 'Error',
-      description: 'An error occurred while loading the post.',
-    };
-  }
+
+  return {
+    title: post.title,
+    description: post.excerpt,
+  };
 }
 
-export default async function PostPage(props: PageProps) {
+export default async function PostPage(props: PostPageProps) {
   try {
-    const params = await props.params;
+    const { params } = props;
+    const { slug } = await params;
+
     const posts = await getAllPosts();
-    const post = posts.find((p) => p.slug === params.slug);
+    const post = posts.find((p) => p.slug === slug);
 
     if (!post) {
       notFound();
     }
 
-    const content = await getPostContent(params.slug);
+    const content = await getPostContent(slug);
 
     if (!content) {
       notFound();
     }
 
-    const htmlContent = md.render(content);
-
-    if (!isString(htmlContent)) {
-      throw new Error('Markdown rendering failed');
-    }
-
     return (
-      <article className="prose prose-lg max-w-none">
-        <h1 className="mb-4 text-4xl font-bold">{post.title}</h1>
-        <time className="mb-8 block text-gray-600">
-          {new Date(post.date).toLocaleDateString()}
-        </time>
-        <div
-          dangerouslySetInnerHTML={{ __html: htmlContent }}
-        />
-      </article>
+      <PostContent
+        content={content}
+        title={post.title}
+        date={post.date}
+      />
     );
   }
   catch (error) {
-    console.error('Error rendering post:', error);
+    console.log(error);
     return (
       <div className="py-10 text-center">
         <h1 className="text-2xl font-bold text-red-600">Error Loading Post</h1>
