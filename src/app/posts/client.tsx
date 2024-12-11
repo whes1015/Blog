@@ -1,11 +1,9 @@
-// src/app/posts/[slug]/client.tsx
-'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import slugify from 'slugify';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPostBySlug } from '@/lib/api';
@@ -30,7 +28,7 @@ function PostContent({ content, title, date }: {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">{title}</CardTitle>
+        <CardTitle className="text-4xl font-bold">{title}</CardTitle>
         <time className="text-sm text-muted-foreground">
           {new Date(date).toLocaleDateString()}
         </time>
@@ -44,10 +42,96 @@ function PostContent({ content, title, date }: {
         <ReactMarkdown
           rehypePlugins={[rehypeRaw]}
           remarkPlugins={[remarkGfm]}
-          className="markdown-body"
+          components={{
+            img: ({ ...props }) => (
+              // eslint-disable-next-line @next/next/no-img-element, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+              <img {...props} alt={props.alt || ''} className="inline-block" />
+            ),
+            h1: ({ children }) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+              const id = slugify(children as string, { lower: true });
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              return <h1 id={id}>{children}</h1>;
+            },
+            h2: ({ children }) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+              const id = slugify(children as string, { lower: true });
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              return <h2 id={id}>{children}</h2>;
+            },
+            h3: ({ children }) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+              const id = slugify(children as string, { lower: true });
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              return <h3 id={id}>{children}</h3>;
+            },
+          }}
         >
           {content}
         </ReactMarkdown>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Sidebar({ content }: { content: string }) {
+  // Extract headings from content
+  const getHeadings = (markdown: string) => {
+    const headingRegex = /^(#{1,3})\s+(.+)$/gm;
+    const headings = [];
+    let match;
+
+    while ((match = headingRegex.exec(markdown)) !== null) {
+      headings.push({
+        level: match[1].length,
+        text: match[2],
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        id: slugify(match[2], { lower: true }),
+      });
+    }
+
+    return headings;
+  };
+
+  const headings = getHeadings(content);
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      window.scrollTo({
+        top: element.offsetTop - 20,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  return (
+    <Card className="sticky top-4">
+      <CardHeader>
+        <CardTitle className="text-xl">目錄</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <nav className="space-y-2">
+          {headings.map((heading, index) => (
+            <a
+              key={index}
+              href={`#${heading.id}`}
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+              onClick={(e) => handleClick(e, heading.id)}
+              className={`
+                block text-sm transition-colors
+                dark:hover:text-blue-400
+                hover:text-blue-500
+                ${heading.level === 1 ? 'font-semibold' : ''}
+                ${heading.level === 2 ? 'ml-4' : ''}
+                ${heading.level === 3 ? 'ml-8 text-xs' : ''}
+              `}
+            >
+              {heading.text}
+            </a>
+          ))}
+        </nav>
       </CardContent>
     </Card>
   );
@@ -108,34 +192,19 @@ export default function PostPageClient() {
           lg:grid-cols-4
         `}
         >
-          {/* Sidebar */}
-          <div className={`
-            space-y-4
-            lg:col-span-1
-          `}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>文章資訊</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">
-                    發布日期：
-                    {new Date(post.date).toLocaleDateString()}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content */}
           <div className="lg:col-span-3">
             <PostContent
               content={post.content || ''}
               title={post.title}
               date={post.date}
             />
+          </div>
+          <div className={`
+            hidden
+            lg:block
+          `}
+          >
+            <Sidebar content={post.content || ''} />
           </div>
         </div>
       </main>

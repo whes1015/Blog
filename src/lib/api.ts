@@ -1,3 +1,5 @@
+import matter from 'gray-matter';
+
 import { Post } from '@/types/post';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -28,12 +30,22 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       return null;
     }
 
-    const contentResponse = await fetch(`${baseUrl}/${slug}.md`);
-    const content = await contentResponse.text();
+    const url = `${baseUrl}/${slug}.md`;
+    const contentResponse = await fetch(url);
+    if (!contentResponse.ok) {
+      throw new Error(`HTTP error! status: ${contentResponse.status}`);
+    }
+    const rawContent = await contentResponse.text();
+
+    const { content } = matter(rawContent);
+
+    const cleanContent = content
+      .replace(/^---[\s\S]*?---\n/, '')
+      .trim();
 
     return {
       ...post,
-      content,
+      content: cleanContent,
     };
   }
   catch (error) {
