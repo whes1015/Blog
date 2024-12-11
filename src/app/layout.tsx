@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 
 import AppHeader from '@/components/header';
-
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 import '@fontsource/manrope/latin-400.css';
@@ -29,8 +28,8 @@ export default function RootLayout({
 
   return (
     <html lang="zh-Hant">
-      <title>TREM 臺灣即時地震監測</title>
-      <meta name="description" content="Taiwan Real-time Earthquake Monitoring" />
+      <title>YuYu1015</title>
+      <meta name="description" content="whes1015" />
       <body className="flex min-h-svh flex-col">
         <TooltipProvider>
           <AppHeader />
